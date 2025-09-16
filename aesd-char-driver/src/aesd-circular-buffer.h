@@ -28,6 +28,8 @@ struct aesd_buffer_entry
      * Number of bytes stored in buffptr
      */
     size_t size;
+    // this size_t is a pain loading things to a graphics card, compiler optimizes
+    // contiguous space for buffptr addressing
 };
 
 struct aesd_circular_buffer
