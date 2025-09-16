@@ -12,6 +12,7 @@ extern void test_init(void);
 extern void test_add_entry(void);
 extern void test_aesd_circular_buffer_find_entry_offset_for_fpos(void);
 extern void test_aesd_circular_buffer_find_entry_offset_string(void);
+extern void test_circular_buffer(void);
 
 
 /*=======Mock Management=====*/
@@ -74,10 +75,11 @@ int main(void)
 {
   UnityBegin("test/aesd-circular-buffer_test.c");
   run_test(test_sane, "test_sane", 10);
-  run_test(test_init, "test_init", 14);
-  run_test(test_add_entry, "test_add_entry", 34);
-  run_test(test_aesd_circular_buffer_find_entry_offset_for_fpos, "test_aesd_circular_buffer_find_entry_offset_for_fpos", 68);
-  run_test(test_aesd_circular_buffer_find_entry_offset_string, "test_aesd_circular_buffer_find_entry_offset_string", 109);
+  run_test(test_init, "test_init", 45);
+  run_test(test_add_entry, "test_add_entry", 65);
+  run_test(test_aesd_circular_buffer_find_entry_offset_for_fpos, "test_aesd_circular_buffer_find_entry_offset_for_fpos", 99);
+  run_test(test_aesd_circular_buffer_find_entry_offset_string, "test_aesd_circular_buffer_find_entry_offset_string", 140);
+  run_test(test_circular_buffer, "test_circular_buffer", 182);
 
   return UnityEnd();
 }
