@@ -4,7 +4,7 @@
 #
 ##############################################################
 
-AESD_ASSIGNMENTS_MODULES_VERSION = '5c3cae6ddc96b8645dfa6f6bc4ddbba08aae8789'
+AESD_ASSIGNMENTS_MODULES_VERSION = 'ab8d42beaeaaa798735797e743950cae9ce88b0e'
 
 # Note: Be sure to reference the *ssh* repository URL here (not https) to work properly
 # with ssh keys and the automated build/test system.
@@ -25,19 +25,21 @@ export KERNELDIR
 KERNELRELEASE=$(LINUX_VERSION)
 export KERNELRELEASE
 
-$(info $(@D) is set)
-
+# this is complaining about the gcc flags, wrong compiler
 #define AESD_ASSIGNMENTS_MODULES_BUILD_CMDS
-        #$(info $(@D) is set!!!)
-        #$(info $(KERNELRELEASE))
+    #$(info $(KERNELRELEASE))
 	#$(info $(KERNELDIR))
 	#$(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D)/misc-modules/ modules
-
 	#$(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(KERNELDIR) M=$(@D)/misc-modules/ modules
+#endef
 
+# this was moved to a overlay fs per instructions in the assignment
+#define AESD_ASSIGNMENTS_MODULES_INSTALL_TARGET_CMDS   
+#	$(INSTALL) -m 0755 $(@D)/scull/scull.init $(TARGET_DIR)/etc/init.d/S98lddmodules
 #endef
 
 AESD_ASSIGNMENTS_MODULES_MODULE_SUBDIRS = misc-modules/
+AESD_ASSIGNMENTS_MODULES_MODULE_SUBDIRS += scull/
 
 $(eval $(kernel-module))
 $(eval $(generic-package))
