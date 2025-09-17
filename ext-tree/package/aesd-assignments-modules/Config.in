@@ -1,0 +1,4 @@
+config BR2_PACKAGE_AESD_ASSIGNMENTS_MODULES
+	bool "aesd-assignments-modules"
+	help
+	  aesd kernel module assignment

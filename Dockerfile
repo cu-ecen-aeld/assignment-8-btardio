@@ -51,10 +51,10 @@ RUN echo "set tabstop=4" >> /root/.vimrc
 RUN echo "set shiftwidth=4" >> /root/.vimrc
 RUN echo "set expandtab" >> /root/.vimrc
 RUN echo "export PATH=$PATH:/arm-gnu-toolchain-13.3.rel1-x86_64-aarch64-none-linux-gnu/bin/" >> /root/.bashrc
-
 RUN mkdir -p /root/.ssh
-#COPY id_ed25519 /root/.ssh/id_ed25519
 
+
+COPY id_ed25519 /root/.ssh/id_ed25519
 
 RUN chmod +x /entrypoint.sh
 
@@ -82,6 +82,23 @@ RUN locale-gen
 RUN adduser --disabled-password --gecos "" bitbake
 RUN usermod -aG root bitbake
 
+
+COPY id_ed25519 /home/bitbake/.ssh/id_ed25519
+
+
+RUN echo "set number" >> /home/bitbake/.vimrc
+RUN echo "set laststatus=2" >> /home/bitbake/.vimrc
+RUN echo "filetype plugin indent on" >> /home/bitbake/.vimrc                                                                                            
+RUN echo "set tabstop=4" >> /home/bitbake/.vimrc                                     
+RUN echo "set shiftwidth=4" >> /home/bitbake/.vimrc
+RUN echo "set expandtab" >> /home/bitbake/.vimrc
+RUN echo "export PATH=$PATH:/arm-gnu-toolchain-13.3.rel1-x86_64-aarch64-none-linux-gnu/bin/" >> /home/bitbake/.bashrc
+RUN mkdir -p /home/bitbake/.ssh  
+
+
+RUN chown -R bitbake:bitbake /home/bitbake
+
+RUN apt-get install -y strace
 
 
 ENTRYPOINT ["/entrypoint.sh"]

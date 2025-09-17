@@ -1,0 +1,4 @@
+config BR2_PACKAGE_AESD_ASSIGNMENTS_SOCKET
+	bool "aesd-assignments-socket"
+	help
+	  AESD socket assignment.
