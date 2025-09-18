@@ -100,6 +100,7 @@ RUN chown -R bitbake:bitbake /home/bitbake
 
 RUN apt-get install -y strace
 
+RUN apt-get install -y swtpm swtpm-tools
 
 ENTRYPOINT ["/entrypoint.sh"]
 

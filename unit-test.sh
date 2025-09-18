@@ -6,8 +6,8 @@
 # cmake .. && make && run the assignment-autotest application
 mkdir -p build
 cd build
-cmake ..
+cmake .
 make clean
 make
 cd ..
-./build/assignment-autotest/assignment-autotest
+./assignment-autotest/assignment-autotest

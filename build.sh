@@ -3,6 +3,8 @@
 #Author: Siddhant Jajoo
 #Modified: Brandon Tardio
 
+ln -s ext-tree base_external
+
 source shared.sh
 
 EXTERNAL_REL_BUILDROOT=../base_external
@@ -24,13 +26,13 @@ cp buildroot_working_menuconfig.config buildroot/.config
 
 #p /repo/new_hardware_new_config /repo/buildroot/.config
 
-if [ ! -d "arm-gnu-toolchain-13.3.rel1-x86_64-aarch64-none-linux-gnu" ]; then
-    wget -q https://developer.arm.com/-/media/Files/downloads/gnu/13.3.rel1/binrel/arm-gnu-toolchain-13.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz
-    tar -xf arm-gnu-toolchain-13.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz
-    rm arm-gnu-toolchain-13.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz
+if [ ! -d "arm-gnu-toolchain-14.2.rel1-x86_64-aarch64-none-linux-gnu" ]; then
+    wget -q https://developer.arm.com/-/media/Files/downloads/gnu/14.2.rel1/binrel/arm-gnu-toolchain-14.2.rel1-x86_64-aarch64-none-linux-gnu.tar.xz
+    tar -xf arm-gnu-toolchain-14.2.rel1-x86_64-aarch64-none-linux-gnu.tar.xz
+    rm arm-gnu-toolchain-14.2.rel1-x86_64-aarch64-none-linux-gnu.tar.xz
 fi
 
-PATH=$PATH:$(pwd)/arm-gnu-toolchain-13.3.rel1-x86_64-aarch64-none-linux-gnu/bin/
+PATH=$PATH:$(pwd)/arm-gnu-toolchain-14.2.rel1-x86_64-aarch64-none-linux-gnu/bin/
 export PATH
 ARCH=arm64
 CONFIG_DIR=$(pwd)/base_external/package/aesd-assignments/
