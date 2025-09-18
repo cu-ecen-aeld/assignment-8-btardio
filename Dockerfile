@@ -102,6 +102,14 @@ RUN apt-get install -y strace
 
 RUN apt-get install -y swtpm swtpm-tools
 
+COPY known_hosts /known_hosts
+
+RUN mkdir -p /home/bitbake/.ssh
+RUN cat /known_hosts >> /home/bitbake/.ssh/known_hosts
+
+RUN mkdir -p /root/.ssh
+RUN cat /known_hosts >> /root/.ssh/known_hosts
+
 ENTRYPOINT ["/entrypoint.sh"]
 
 
