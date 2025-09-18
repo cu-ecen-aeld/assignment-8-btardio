@@ -1,0 +1,28 @@
+#!/bin/sh
+module=hello
+# Use the same name for the device as the name used for the module
+device=hello
+# Support read/write for owner and group, read only for everyone using 644
+mode="664"
+SECTION="extra"
+
+KERNEL=`uname -r`
+
+set -e
+# Group: since distributions do it differently, look for wheel or use staff
+# These are groups which correspond to system administrator accounts
+if grep -q '^staff:' /etc/group; then
+    group="staff"
+else
+    group="wheel"
+fi
+
+echo "Load our module, exit on failure"
+insmod /lib/modules/${KERNEL}/${SECTION}/$module.ko $*
+
+if [ $? -ne 0 ]; then
+    echo "Error: insmod failed to load the module."
+    exit 1
+fi
+
+exit 0
