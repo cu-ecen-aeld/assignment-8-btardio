@@ -16,7 +16,7 @@ jobs:
           - name: Run unit test
             run: ./unit-test.sh
     full-test:
-        container: btardio/classimg:latest
+        container: docker.io/btardio/classimg:latest
         runs-on: self-hosted
         steps:
           - uses: actions/checkout@v2
