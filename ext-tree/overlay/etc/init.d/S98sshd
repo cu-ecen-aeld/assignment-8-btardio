@@ -1,7 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 # sshd ai generated search term: "sshd init.d script start stop restart using pid store pid"
 
-#!/bin/sh
 
 # Configuration variables
 DAEMON=/usr/sbin/sshd

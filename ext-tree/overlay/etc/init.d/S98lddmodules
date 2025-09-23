@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # Sample init script for the scull driver module <rubini@linux.it>
 
 DEVICE="scull"
