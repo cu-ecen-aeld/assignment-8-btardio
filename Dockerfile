@@ -9,8 +9,8 @@ RUN apt-get install -y build-essential ruby cmake
 # RUN /actions-runner/config.sh remove --url https://github.com/cu-ecen-aeld/assignment-1-btardio --token AFAF6AORHSIAUUEWISU3VGDHRMP2C
 RUN apt-get install -y vim
 RUN apt-get install -y wget
-RUN wget https://developer.arm.com/-/media/Files/downloads/gnu/13.3.rel1/binrel/arm-gnu-toolchain-13.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz
-RUN tar -xvf arm-gnu-toolchain-13.3.rel1-x86_64-aarch64-none-linux-gnu.tar.xz
+RUN wget https://developer.arm.com/-/media/Files/downloads/gnu/14.2.rel1/binrel/arm-gnu-toolchain-14.2.rel1-x86_64-aarch64-none-linux-gnu.tar.xz
+RUN tar -xvf arm-gnu-toolchain-14.2.rel1-x86_64-aarch64-none-linux-gnu.tar.xz
 RUN apt-get install -y python3
 # RUN apt-get install -y python3-dev
 RUN apt-get install -y gdb
@@ -38,7 +38,7 @@ RUN apt-get install -y bc
 RUN apt-get install -y libelf-dev
 
 RUN apt-get install -y cpio
-RUN apt-get install -y qemu-system-arm qemu
+# RUN apt-get install -y qemu-system-aarch64
 
 RUN apt-get install -y rsync
 RUN apt-get install -y git
@@ -50,7 +50,7 @@ RUN echo "filetype plugin indent on" >> /root/.vimrc
 RUN echo "set tabstop=4" >> /root/.vimrc
 RUN echo "set shiftwidth=4" >> /root/.vimrc
 RUN echo "set expandtab" >> /root/.vimrc
-RUN echo "export PATH=$PATH:/arm-gnu-toolchain-13.3.rel1-x86_64-aarch64-none-linux-gnu/bin/" >> /root/.bashrc
+RUN echo "export PATH=$PATH:/arm-gnu-toolchain-14.2.rel1-x86_64-aarch64-none-linux-gnu/bin/" >> /root/.bashrc
 RUN mkdir -p /root/.ssh
 
 
@@ -92,7 +92,7 @@ RUN echo "filetype plugin indent on" >> /home/bitbake/.vimrc
 RUN echo "set tabstop=4" >> /home/bitbake/.vimrc                                     
 RUN echo "set shiftwidth=4" >> /home/bitbake/.vimrc
 RUN echo "set expandtab" >> /home/bitbake/.vimrc
-RUN echo "export PATH=$PATH:/arm-gnu-toolchain-13.3.rel1-x86_64-aarch64-none-linux-gnu/bin/" >> /home/bitbake/.bashrc
+RUN echo "export PATH=$PATH:/arm-gnu-toolchain-14.2.rel1-x86_64-aarch64-none-linux-gnu/bin/" >> /home/bitbake/.bashrc
 RUN mkdir -p /home/bitbake/.ssh  
 
 
@@ -109,6 +109,13 @@ RUN cat /known_hosts >> /home/bitbake/.ssh/known_hosts
 
 RUN mkdir -p /root/.ssh
 RUN cat /known_hosts >> /root/.ssh/known_hosts
+
+RUN pip3 install tomli sphinx sphinx_rtd_theme ninja
+RUN apt-get install -y glib-2.0
+
+RUN apt-get install -y libslirp-dev
+
+
 
 ENTRYPOINT ["/entrypoint.sh"]
 
