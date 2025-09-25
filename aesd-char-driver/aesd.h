@@ -106,6 +106,7 @@ int     aesd_p_init(dev_t dev);
 void    aesd_p_cleanup(void);
 int     aesd_access_init(dev_t dev);
 void    aesd_access_cleanup(void);
+void	aesd_class_cleanup(void);
 
 int     aesd_trim(struct aesd_dev *dev);
 
@@ -129,12 +130,12 @@ long     aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
 #endif
 
 #ifndef SCULL_NR_DEVS
-#define SCULL_NR_DEVS 4    /* aesd0 through aesd3 */
+#define SCULL_NR_DEVS 1    /* aesd0 through aesd3 */
 #endif
 
-#ifndef SCULL_P_NR_DEVS
-#define SCULL_P_NR_DEVS 4  /* aesdpipe0 through aesdpipe3 */
-#endif
+//#ifndef SCULL_P_NR_DEVS
+//#define SCULL_P_NR_DEVS 4  /* aesdpipe0 through aesdpipe3 */
+//#endif
 
 
 

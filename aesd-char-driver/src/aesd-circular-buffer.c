@@ -35,18 +35,19 @@ struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(
 		size_t *entry_offset_byte_rtn 
 		)
 {
-    if( char_offset < 0 ) {
-	*entry_offset_byte_rtn = -1;
-	return NULL;
-    }
 
     struct aesd_buffer_entry *rtn_value = &buffer->entry[buffer->out_offs + 1 % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED];
-
     int count = char_offset;
     int out_offs_count = buffer->out_offs;
     struct aesd_buffer_entry *counting_entry = rtn_value;
     int loops_completed = 0;
     
+
+    if( char_offset < 0 ) {
+	*entry_offset_byte_rtn = -1;
+	return NULL;
+    }
+
     while (count > -1) {
 	
 	count -= counting_entry->size;

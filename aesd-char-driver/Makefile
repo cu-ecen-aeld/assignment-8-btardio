@@ -27,7 +27,7 @@ else
 #    obj-m := hello.o hellop.o seq.o jit.o jiq.o sleepy.o complete.o \
 #             silly.o faulty.o kdatasize.o kdataalign.o
 
-	aesdcircular-objs := main.o access.o
+	aesdcircular-objs := main.o access.o aesd-circular-buffer.o
 
 	obj-m := aesdcircular.o
 endif

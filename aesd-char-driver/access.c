@@ -36,6 +36,9 @@
 
 static dev_t aesd_a_firstdev;  /* Where our range begins */
 
+static struct class *aesd_class;
+
+static struct device *aesd_device;
 /*
  * These devices fall back on the main aesd operations. They only
  * differ in the implementation of open() and close()
@@ -312,7 +315,8 @@ static int aesd_c_release(struct inode *inode, struct file *filp)
 /*
  * The other operations for the device come from the bare device
  */
-struct file_operations aesd_priv_fops = {
+/*
+ * struct file_operations aesd_priv_fops = {
 	.owner =    THIS_MODULE,
 	.llseek =   aesd_llseek,
 	.read =     aesd_read,
@@ -321,7 +325,7 @@ struct file_operations aesd_priv_fops = {
 	.open =     aesd_c_open,
 	.release =  aesd_c_release,
 };
-
+*/
 /************************************************************************
  *
  * And the init and cleanup functions come last
@@ -332,12 +336,13 @@ static struct aesd_adev_info {
 	struct aesd_dev *aesddev;
 	struct file_operations *fops;
 } aesd_access_devs[] = {
-	{ "aesdsingle", &aesd_s_device, &aesd_sngl_fops },
-	{ "aesduid", &aesd_u_device, &aesd_user_fops },
-	{ "aesdwuid", &aesd_w_device, &aesd_wusr_fops },
-	{ "aesdpriv", &aesd_c_device, &aesd_priv_fops }
+	//{ "aesdsingle", &aesd_s_device, &aesd_sngl_fops },
+	{ "aesduid", &aesd_u_device, &aesd_user_fops }
+	//,
+	//{ "aesdwuid", &aesd_w_device, &aesd_wusr_fops },
+	//{ "aesdpriv", &aesd_c_device, &aesd_priv_fops }
 };
-#define SCULL_N_ADEVS 4
+#define SCULL_N_ADEVS 1
 
 /*
  * Set up a single device.
@@ -368,20 +373,58 @@ static void aesd_access_setup (dev_t devno, struct aesd_adev_info *devinfo)
 
 int aesd_access_init(dev_t firstdev)
 {
+
+	struct kobject *old_item;
+
 	int result, i;
+/*
+	printk(KERN_WARNING "aesd_access_init(...)\n");
+	old_item = kset_find_obj(kernel_kobj->kset, "aesd_device_class");
+
+	if (old_item) {
+		kobject_del(old_item);
+	}
+*/
 
 	/* Get our number space */
-	result = register_chrdev_region (firstdev, SCULL_N_ADEVS, "aesda");
+	result = register_chrdev_region (firstdev, 0, "aesda");
 	if (result < 0) {
 		printk(KERN_WARNING "aesda: device number registration failed\n");
 		return 0;
 	}
 	aesd_a_firstdev = firstdev;
 
+
+	/* set up the automatic class for device to appear in /dev/... */
+/*
+	aesd_class = class_create(THIS_MODULE, "aesd_device_class");
+	if (IS_ERR(aesd_class)) {
+		printk(KERN_WARNING "unable to class_create\n");
+		//unregister_chrdev_region(aesd_a_firstdev, SCULL_N_ADEVS);
+		return 0;
+	}
+*/
 	/* Set up each device. */
-	for (i = 0; i < SCULL_N_ADEVS; i++)
-		aesd_access_setup (firstdev + i, aesd_access_devs + i);
-	return SCULL_N_ADEVS;
+//	for (i = 0; i < SCULL_N_ADEVS; i++)
+	aesd_access_setup (firstdev, &aesd_access_devs[0]);
+
+/*
+	aesd_device = device_create(aesd_class, NULL, firstdev, NULL, "aesd_device_node");
+	if (IS_ERR(aesd_device)) {
+		printk(KERN_WARNING "unable to create aesd device node\n");
+		class_destroy(aesd_class);
+		aesd_access_cleanup();
+		return 0;
+	}
+*/
+
+	return 1;
+}
+
+void aesd_class_cleanup(void)
+{
+	device_destroy(aesd_class, aesd_a_firstdev);
+	class_destroy(aesd_class);
 }
 
 /*

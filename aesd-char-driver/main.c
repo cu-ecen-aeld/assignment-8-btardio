@@ -596,7 +596,7 @@ void aesd_cleanup_module(void)
 	//removingthe pipe devices hoping they arent the /proc devices
 	//aesd_p_cleanup();
 	
-	
+//	aesd_class_cleanup();
 	aesd_access_cleanup();
 
 }
@@ -623,21 +623,34 @@ static void aesd_setup_cdev(struct aesd_dev *dev, int index)
 
 int aesd_init_module(void)
 {
-
+//aesd_cleanup_module();
 	int result, i;
 	dev_t dev = 0;
+
+	printk(KERN_WARNING "aesd_nr_devs: %d\n", aesd_nr_devs);
+	printk(KERN_WARNING "major %d\n", aesd_major);
+	printk(KERN_WARNING "minor %d\n", aesd_minor);
+	printk(KERN_WARNING "dev %d\n", dev);
+
 
 	/*
 	 * Get a range of minor numbers to work with, asking for a dynamic
 	 * major unless directed otherwise at load time.
 	 */
+
 	if (aesd_major) {
 		dev = MKDEV(aesd_major, aesd_minor);
+		printk(KERN_WARNING "shouldnt get here 000\n");
+		printk(KERN_WARNING "_major %d\n", aesd_major);
+		printk(KERN_WARNING "_minor %d\n", aesd_minor);
+		printk(KERN_WARNING "_dev %d\n", dev);
 		result = register_chrdev_region(dev, aesd_nr_devs, "aesd");
 	} else {
+		printk(KERN_WARNING "failing before\n");
 		result = alloc_chrdev_region(&dev, aesd_minor, aesd_nr_devs,
 				"aesd");
 		aesd_major = MAJOR(dev);
+		printk(KERN_WARNING "MAJOR(dev): %d\n", aesd_major);
 	}
 	if (result < 0) {
 		printk(KERN_WARNING "aesd: can't get major %d\n", aesd_major);
@@ -677,6 +690,7 @@ int aesd_init_module(void)
 	return 0; /* succeed */
 
   fail:
+	printk(KERN_WARNING "fail goto reached\n");
 	aesd_cleanup_module();
 	return result;
 
