@@ -1,4 +1,4 @@
-
+#define CIRCULAR_INCREMENT(number, limit) ((number + 1) % limit)
 
 // TODO: this is what becomes the circular buffer
 /*

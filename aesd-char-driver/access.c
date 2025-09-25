@@ -36,9 +36,9 @@
 
 static dev_t aesd_a_firstdev;  /* Where our range begins */
 
-static struct class *aesd_class;
+//static struct class *aesd_class;
 
-static struct device *aesd_device;
+//static struct device *aesd_device;
 /*
  * These devices fall back on the main aesd operations. They only
  * differ in the implementation of open() and close()
@@ -46,50 +46,6 @@ static struct device *aesd_device;
 
 
 
-/************************************************************************
- *
- * The first device is the single-open one,
- *  it has an hw structure and an open count
- */
-
-static struct aesd_dev aesd_s_device;
-static atomic_t aesd_s_available = ATOMIC_INIT(1);
-
-static int aesd_s_open(struct inode *inode, struct file *filp)
-{
-	struct aesd_dev *dev = &aesd_s_device; /* device information */
-
-	if (! atomic_dec_and_test (&aesd_s_available)) {
-		atomic_inc(&aesd_s_available);
-		return -EBUSY; /* already open */
-	}
-
-	/* then, everything else is copied from the bare aesd device */
-	if ( (filp->f_flags & O_ACCMODE) == O_WRONLY)
-		aesd_trim(dev);
-	filp->private_data = dev;
-	return 0;          /* success */
-}
-
-static int aesd_s_release(struct inode *inode, struct file *filp)
-{
-	atomic_inc(&aesd_s_available); /* release the device */
-	return 0;
-}
-
-
-/*
- * The other operations for the single-open device come from the bare device
- */
-struct file_operations aesd_sngl_fops = {
-	.owner =	THIS_MODULE,
-	.llseek =     	aesd_llseek,
-	.read =       	aesd_read,
-	.write =      	aesd_write,
-	.unlocked_ioctl = aesd_ioctl,
-	.open =       	aesd_s_open,
-	.release =    	aesd_s_release,
-};
 
 
 /************************************************************************
@@ -154,178 +110,8 @@ struct file_operations aesd_user_fops = {
 };
 
 
-/************************************************************************
- *
- * Next, the device with blocking-open based on uid
- */
-
-static struct aesd_dev aesd_w_device;
-static int aesd_w_count;	/* initialized to 0 by default */
-static uid_t aesd_w_owner;	/* initialized to 0 by default */
-static DECLARE_WAIT_QUEUE_HEAD(aesd_w_wait);
-static DEFINE_SPINLOCK(aesd_w_lock);
-
-static inline int aesd_w_available(void)
-{
-	return aesd_w_count == 0 ||
-		aesd_w_owner == current_uid().val ||
-		aesd_w_owner == current_euid().val ||
-		capable(CAP_DAC_OVERRIDE);
-}
 
 
-static int aesd_w_open(struct inode *inode, struct file *filp)
-{
-	struct aesd_dev *dev = &aesd_w_device; /* device information */
-
-	spin_lock(&aesd_w_lock);
-	while (! aesd_w_available()) {
-		spin_unlock(&aesd_w_lock);
-		if (filp->f_flags & O_NONBLOCK) return -EAGAIN;
-		if (wait_event_interruptible (aesd_w_wait, aesd_w_available()))
-			return -ERESTARTSYS; /* tell the fs layer to handle it */
-		spin_lock(&aesd_w_lock);
-	}
-	if (aesd_w_count == 0)
-		aesd_w_owner = current_uid().val; /* grab it */
-	aesd_w_count++;
-	spin_unlock(&aesd_w_lock);
-
-	/* then, everything else is copied from the bare aesd device */
-	if ((filp->f_flags & O_ACCMODE) == O_WRONLY)
-		aesd_trim(dev);
-	filp->private_data = dev;
-	return 0;          /* success */
-}
-
-static int aesd_w_release(struct inode *inode, struct file *filp)
-{
-	int temp;
-
-	spin_lock(&aesd_w_lock);
-	aesd_w_count--;
-	temp = aesd_w_count;
-	spin_unlock(&aesd_w_lock);
-
-	if (temp == 0)
-		wake_up_interruptible_sync(&aesd_w_wait); /* awake other uid's */
-	return 0;
-}
-
-
-/*
- * The other operations for the device come from the bare device
- */
-struct file_operations aesd_wusr_fops = {
-	.owner =      THIS_MODULE,
-	.llseek =     aesd_llseek,
-	.read =       aesd_read,
-	.write =      aesd_write,
-	.unlocked_ioctl = aesd_ioctl,
-	.open =       aesd_w_open,
-	.release =    aesd_w_release,
-};
-
-/************************************************************************
- *
- * Finally the `cloned' private device. This is trickier because it
- * involves list management, and dynamic allocation.
- */
-
-/* The clone-specific data structure includes a key field */
-
-struct aesd_listitem {
-	struct aesd_dev device;
-	dev_t key;
-	struct list_head list;
-    
-};
-
-/* The list of devices, and a lock to protect it */
-static LIST_HEAD(aesd_c_list);
-static DEFINE_SPINLOCK(aesd_c_lock);
-
-/* A placeholder aesd_dev which really just holds the cdev stuff. */
-static struct aesd_dev aesd_c_device;   
-
-/* Look for a device or create one if missing */
-static struct aesd_dev *aesd_c_lookfor_device(dev_t key)
-{
-	struct aesd_listitem *lptr;
-
-	list_for_each_entry(lptr, &aesd_c_list, list) {
-		if (lptr->key == key)
-			return &(lptr->device);
-	}
-
-	/* not found */
-	lptr = kmalloc(sizeof(struct aesd_listitem), GFP_KERNEL);
-	if (!lptr)
-		return NULL;
-
-	/* initialize the device */
-	memset(lptr, 0, sizeof(struct aesd_listitem));
-	lptr->key = key;
-	aesd_trim(&(lptr->device)); /* initialize it */
-	mutex_init(&lptr->device.lock);
-
-	/* place it in the list */
-	list_add(&lptr->list, &aesd_c_list);
-
-	return &(lptr->device);
-}
-
-static int aesd_c_open(struct inode *inode, struct file *filp)
-{
-	struct aesd_dev *dev;
-	dev_t key;
- 
-	if (!current->signal->tty) { 
-		PDEBUG("Process \"%s\" has no ctl tty\n", current->comm);
-		return -EINVAL;
-	}
-	key = tty_devnum(current->signal->tty);
-
-	/* look for a aesdc device in the list */
-	spin_lock(&aesd_c_lock);
-	dev = aesd_c_lookfor_device(key);
-	spin_unlock(&aesd_c_lock);
-
-	if (!dev)
-		return -ENOMEM;
-
-	/* then, everything else is copied from the bare aesd device */
-	if ( (filp->f_flags & O_ACCMODE) == O_WRONLY)
-		aesd_trim(dev);
-	filp->private_data = dev;
-	return 0;          /* success */
-}
-
-static int aesd_c_release(struct inode *inode, struct file *filp)
-{
-	/*
-	 * Nothing to do, because the device is persistent.
-	 * A `real' cloned device should be freed on last close
-	 */
-	return 0;
-}
-
-
-
-/*
- * The other operations for the device come from the bare device
- */
-/*
- * struct file_operations aesd_priv_fops = {
-	.owner =    THIS_MODULE,
-	.llseek =   aesd_llseek,
-	.read =     aesd_read,
-	.write =    aesd_write,
-	.unlocked_ioctl = aesd_ioctl,
-	.open =     aesd_c_open,
-	.release =  aesd_c_release,
-};
-*/
 /************************************************************************
  *
  * And the init and cleanup functions come last
@@ -377,14 +163,6 @@ int aesd_access_init(dev_t firstdev)
 	struct kobject *old_item;
 
 	int result, i;
-/*
-	printk(KERN_WARNING "aesd_access_init(...)\n");
-	old_item = kset_find_obj(kernel_kobj->kset, "aesd_device_class");
-
-	if (old_item) {
-		kobject_del(old_item);
-	}
-*/
 
 	/* Get our number space */
 	result = register_chrdev_region (firstdev, 0, "aesda");
@@ -394,37 +172,9 @@ int aesd_access_init(dev_t firstdev)
 	}
 	aesd_a_firstdev = firstdev;
 
-
-	/* set up the automatic class for device to appear in /dev/... */
-/*
-	aesd_class = class_create(THIS_MODULE, "aesd_device_class");
-	if (IS_ERR(aesd_class)) {
-		printk(KERN_WARNING "unable to class_create\n");
-		//unregister_chrdev_region(aesd_a_firstdev, SCULL_N_ADEVS);
-		return 0;
-	}
-*/
-	/* Set up each device. */
-//	for (i = 0; i < SCULL_N_ADEVS; i++)
 	aesd_access_setup (firstdev, &aesd_access_devs[0]);
 
-/*
-	aesd_device = device_create(aesd_class, NULL, firstdev, NULL, "aesd_device_node");
-	if (IS_ERR(aesd_device)) {
-		printk(KERN_WARNING "unable to create aesd device node\n");
-		class_destroy(aesd_class);
-		aesd_access_cleanup();
-		return 0;
-	}
-*/
-
 	return 1;
-}
-
-void aesd_class_cleanup(void)
-{
-	device_destroy(aesd_class, aesd_a_firstdev);
-	class_destroy(aesd_class);
 }
 
 /*
@@ -441,13 +191,6 @@ void aesd_access_cleanup(void)
 		struct aesd_dev *dev = aesd_access_devs[i].aesddev;
 		cdev_del(&dev->cdev);
 		aesd_trim(aesd_access_devs[i].aesddev);
-	}
-
-    	/* And all the cloned devices */
-	list_for_each_entry_safe(lptr, next, &aesd_c_list, list) {
-		list_del(&lptr->list);
-		aesd_trim(&(lptr->device));
-		kfree(lptr);
 	}
 
 	/* Free up our number space */

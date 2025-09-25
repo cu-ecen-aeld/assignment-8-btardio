@@ -5,6 +5,7 @@
  *      Author: Dan Walkes
  */
 
+
 #ifndef AESD_CIRCULAR_BUFFER_H
 #define AESD_CIRCULAR_BUFFER_H
 
@@ -17,6 +18,8 @@
 #endif
 
 #define AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED 10
+
+
 
 struct aesd_buffer_entry
 {
@@ -51,6 +54,8 @@ struct aesd_circular_buffer
      * set to true when the buffer entry structure is full
      */
     bool full;
+
+    int count;
 
 };
 

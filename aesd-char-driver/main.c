@@ -13,6 +13,9 @@
  */
 
 
+
+// todo look at what happens when mknod /dev/aesd c 508 3 instead of 1
+
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/init.h>
@@ -30,7 +33,7 @@
 #include <linux/uaccess.h>	/* copy_*_user */
 
 #include "aesd.h"		/* local definitions */
-
+#include "src/aesd-circular-buffer.h"
 #include "access_ok_version.h"
 #include "proc_ops_version.h"
 
@@ -57,6 +60,7 @@ MODULE_LICENSE("GPL");
 
 struct aesd_dev *aesd_devices;	/* allocated in aesd_init_module */
 
+static struct aesd_circular_buffer buffer;
 
 /*
  * Empty out the aesd device; must be called with the device
@@ -297,6 +301,14 @@ struct aesd_qset *aesd_follow(struct aesd_dev *dev, int n)
 ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
                 loff_t *f_pos)
 {
+
+	int i;
+	for ( i = 0; i < AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED; i++){
+		printk(KERN_WARNING "buffer[%d]: %s\n",i, buffer.entry[i].buffptr);
+	}
+
+
+
 	struct aesd_dev *dev = filp->private_data; 
 	struct aesd_qset *dptr;	/* the first listitem */
 	int quantum = dev->quantum, qset = dev->qset;
@@ -326,10 +338,14 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	if (count > quantum - q_pos)
 		count = quantum - q_pos;
 
-	if (copy_to_user(buf, dptr->data[s_pos] + q_pos, count)) {
+	if (copy_to_user(buf, buffer.entry[buffer.out_offs].buffptr, buffer.entry[buffer.out_offs].size)) {
 		retval = -EFAULT;
 		goto out;
 	}
+
+	memset(buffer.entry[buffer.out_offs].buffptr, 0, buffer.entry[buffer.out_offs].size);
+		
+	buffer.out_offs = (buffer.out_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
 	*f_pos += count;
 	retval = count;
 
@@ -356,35 +372,83 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 	rest = (long)*f_pos % itemsize;
 	s_pos = rest / quantum; q_pos = rest % quantum;
 
+	
+
+
 	/* follow the list up to the right position */
+
+	
+
+
+
+	// replace with the write pointer of circ buffer
 	dptr = aesd_follow(dev, item);
+
+
+	
+
+
 	if (dptr == NULL)
 		goto out;
+
+	// empty initialized first time case
 	if (!dptr->data) {
 		dptr->data = kmalloc(qset * sizeof(char *), GFP_KERNEL);
 		if (!dptr->data)
 			goto out;
 		memset(dptr->data, 0, qset * sizeof(char *));
 	}
+
+
+
+	// not empty
 	if (!dptr->data[s_pos]) {
 		dptr->data[s_pos] = kmalloc(quantum, GFP_KERNEL);
 		if (!dptr->data[s_pos])
 			goto out;
 	}
-	/* write only up to the end of this quantum */
+
+	// write only up to the end of this quantum 
 	if (count > quantum - q_pos)
 		count = quantum - q_pos;
 
+
+
+	struct aesd_buffer_entry entry; // = kmalloc(sizeof(struct aesd_buffer_entry), GFP_KERNEL);
+	
+	const char* mychars;
+
+	mychars = kmalloc(count * sizeof(char), GFP_KERNEL);
+
+	if (mychars) {
+		// slab	
+		memset(mychars, 0, ksize(mychars));
+	}
+
+
+	if (copy_from_user(mychars, buf, count)) {
+		retval = -EFAULT;
+		goto out;
+	}
 	if (copy_from_user(dptr->data[s_pos]+q_pos, buf, count)) {
 		retval = -EFAULT;
 		goto out;
 	}
+
+
+	entry.buffptr = mychars;
+	entry.size=count;
+
+
+	aesd_circular_buffer_add_entry(&buffer, &entry);
+
 	*f_pos += count;
 	retval = count;
 
-        /* update the size */
+        // update the size
 	if (dev->size < *f_pos)
 		dev->size = *f_pos;
+
 
   out:
 	mutex_unlock(&dev->lock);
@@ -591,13 +655,10 @@ void aesd_cleanup_module(void)
 
 	/* cleanup_module is never called if registering failed */
 	unregister_chrdev_region(devno, aesd_nr_devs);
-
-	/* and call the cleanup functions for friend devices */
-	//removingthe pipe devices hoping they arent the /proc devices
-	//aesd_p_cleanup();
 	
-//	aesd_class_cleanup();
 	aesd_access_cleanup();
+
+	//kfree(buffer);
 
 }
 
@@ -623,15 +684,8 @@ static void aesd_setup_cdev(struct aesd_dev *dev, int index)
 
 int aesd_init_module(void)
 {
-//aesd_cleanup_module();
 	int result, i;
 	dev_t dev = 0;
-
-	printk(KERN_WARNING "aesd_nr_devs: %d\n", aesd_nr_devs);
-	printk(KERN_WARNING "major %d\n", aesd_major);
-	printk(KERN_WARNING "minor %d\n", aesd_minor);
-	printk(KERN_WARNING "dev %d\n", dev);
-
 
 	/*
 	 * Get a range of minor numbers to work with, asking for a dynamic
@@ -640,17 +694,12 @@ int aesd_init_module(void)
 
 	if (aesd_major) {
 		dev = MKDEV(aesd_major, aesd_minor);
-		printk(KERN_WARNING "shouldnt get here 000\n");
-		printk(KERN_WARNING "_major %d\n", aesd_major);
-		printk(KERN_WARNING "_minor %d\n", aesd_minor);
-		printk(KERN_WARNING "_dev %d\n", dev);
+		printk(KERN_WARNING "shouldnt be here 000\n");
 		result = register_chrdev_region(dev, aesd_nr_devs, "aesd");
 	} else {
-		printk(KERN_WARNING "failing before\n");
 		result = alloc_chrdev_region(&dev, aesd_minor, aesd_nr_devs,
 				"aesd");
 		aesd_major = MAJOR(dev);
-		printk(KERN_WARNING "MAJOR(dev): %d\n", aesd_major);
 	}
 	if (result < 0) {
 		printk(KERN_WARNING "aesd: can't get major %d\n", aesd_major);
@@ -687,6 +736,10 @@ int aesd_init_module(void)
 	aesd_create_proc();
 #endif
 
+	//buffer = kmalloc(sizeof(struct aesd_circular_buffer), GFP_KERNEL);	
+	
+	buffer.in_offs = buffer.out_offs = 0;
+
 	return 0; /* succeed */
 
   fail:
@@ -694,46 +747,7 @@ int aesd_init_module(void)
 	aesd_cleanup_module();
 	return result;
 
-    /*
-    dev_t dev = 0;
-    int result;
-    result = alloc_chrdev_region(&dev, aesd_minor, 1,
-            "aesdchar");
-    aesd_major = MAJOR(dev);
-    if (result < 0) {
-        printk(KERN_WARNING "Can't get major %d\n", aesd_major);
-        return result;
-    }
-    memset(&aesd_device,0,sizeof(struct aesd_dev));
-
-    ///
-    // TODO: initialize the AESD specific portion of the device
-    //
-
-    result = aesd_setup_cdev(&aesd_device);
-
-    if( result ) {
-        unregister_chrdev_region(dev, 1);
-    }
-    return result;
-    */
-
 }
-
-/*
-void aesd_cleanup_module(void)
-{
-    dev_t devno = MKDEV(aesd_major, aesd_minor);
-
-    cdev_del(&aesd_device.cdev);
-
-    //
-    // TODO: cleanup AESD specific poritions here as necessary
-    //
-
-    unregister_chrdev_region(devno, 1);
-}
-*/
 
 
 

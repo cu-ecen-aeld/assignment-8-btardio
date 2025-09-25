@@ -2,12 +2,14 @@
  * @file aesd-circular-buffer.c
  * @brief Functions and data related to a circular buffer imlementation
  *
- * @author Dan Walkes
- * @date 2020-03-01
- * @copyright Copyright (c) 2020
+ * @author Brandon Tardio
+ * @date 2025-09-28
  *
  */
 
+// TODO: cleanup
+#include <linux/kernel.h>
+#include <linux/slab.h>
 #ifdef __KERNEL__
 #include <linux/string.h>
 #else
@@ -82,7 +84,7 @@ struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(
 */
 void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const struct aesd_buffer_entry *add_entry)
 {
-    
+
     if (add_entry == NULL){
         return;
     }
@@ -91,9 +93,12 @@ void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const s
     {
 	buffer->out_offs = (buffer->in_offs + 1 ) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
     }
-
-    buffer->entry[buffer->in_offs] = *add_entry;
     
+    kfree(buffer->entry[buffer->in_offs].buffptr);
+    
+    buffer->entry[buffer->in_offs].buffptr = add_entry->buffptr;
+    buffer->entry[buffer->in_offs].size = add_entry->size;
+
     buffer->in_offs = (buffer->in_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
     
     if((buffer->in_offs) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED == buffer->out_offs) {
@@ -102,8 +107,12 @@ void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const s
         buffer->full = 0;
     }
 
+    buffer->count++;
+
     return;
 }
+
+
 
 /**
 * Initializes the circular buffer described by @param buffer to an empty struct
