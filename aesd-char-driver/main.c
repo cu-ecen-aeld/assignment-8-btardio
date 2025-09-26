@@ -303,9 +303,9 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 {
 
 	int i;
-	for ( i = 0; i < AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED; i++){
-		printk(KERN_WARNING "buffer[%d]: %s\n",i, buffer.entry[i].buffptr);
-	}
+//	for ( i = 0; i < AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED; i++){
+//		printk(KERN_WARNING "buffer[%d]: %s\n",i, buffer.entry[i].buffptr);
+//	}
 
 
 
@@ -338,10 +338,54 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	if (count > quantum - q_pos)
 		count = quantum - q_pos;
 
+	
+	int total_size = 0;
+	int old_count = buffer.count;
+	int old_out_offs = buffer.out_offs;
+	// empty buffer get sizes
+	while (buffer.count > 0){
+		buffer.count--;
+		total_size += buffer.entry[buffer.out_offs].size;
+		buffer.out_offs = (buffer.out_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+		printk(KERN_WARNING "total_size: %d\n", total_size);
+	
+
+	}
+
+	buffer.count = old_count;
+	buffer.out_offs = old_out_offs;
+
+	printk(KERN_WARNING "total_size: %d\n", total_size);
+
+
+	char* temp_buffer = kmalloc(sizeof(char) * total_size, GFP_KERNEL);
+
+	int b_offset = 0;
+	while (buffer.count > 0) {
+		buffer.count--;
+
+		// write to temp_buffer
+
+		memcpy(temp_buffer + b_offset, buffer.entry[buffer.out_offs].buffptr, buffer.entry[buffer.out_offs].size);
+		
+		
+		b_offset += buffer.entry[buffer.out_offs].size;
+		
+		buffer.out_offs = (buffer.out_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+		printk(KERN_WARNING "temp_buffer: %s\n", temp_buffer);
+
+	}
+
+	buffer.count = old_count;
+	buffer.out_offs = old_out_offs;
+
+
 	if (copy_to_user(buf, buffer.entry[buffer.out_offs].buffptr, buffer.entry[buffer.out_offs].size)) {
 		retval = -EFAULT;
 		goto out;
 	}
+
+	kfree(temp_buffer);
 
 	memset(buffer.entry[buffer.out_offs].buffptr, 0, buffer.entry[buffer.out_offs].size);
 		
@@ -677,7 +721,6 @@ static void aesd_setup_cdev(struct aesd_dev *dev, int index)
 	if (err)
 		printk(KERN_NOTICE "Error %d adding aesd%d", err, index);
 }
-
 
 
 

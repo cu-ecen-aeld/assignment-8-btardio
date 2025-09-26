@@ -7,11 +7,10 @@
  *
  */
 
-// TODO: cleanup
-#include <linux/kernel.h>
-#include <linux/slab.h>
 #ifdef __KERNEL__
 #include <linux/string.h>
+#include <linux/kernel.h>
+#include <linux/slab.h>
 #else
 #include <string.h>
 #endif
@@ -93,8 +92,17 @@ void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const s
     {
 	buffer->out_offs = (buffer->in_offs + 1 ) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
     }
-    
+ 
+#ifdef __KERNEL__   
     kfree(buffer->entry[buffer->in_offs].buffptr);
+#else
+
+    // test is using stack, but keeping above b/c user can't manage slab
+    if (buffer->entry[buffer->in_offs].buffptr != NULL) { 
+    	//free(buffer->entry[buffer->in_offs].buffptr);
+    }
+
+#endif
     
     buffer->entry[buffer->in_offs].buffptr = add_entry->buffptr;
     buffer->entry[buffer->in_offs].size = add_entry->size;

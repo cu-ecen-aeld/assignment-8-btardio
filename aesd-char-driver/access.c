@@ -64,16 +64,20 @@ static int aesd_u_open(struct inode *inode, struct file *filp)
 	struct aesd_dev *dev = &aesd_u_device; /* device information */
 
 	spin_lock(&aesd_u_lock);
+
+
 	if (aesd_u_count && 
-	                (aesd_u_owner != current_uid().val) &&  /* allow user */
-	                (aesd_u_owner != current_euid().val) && /* allow whoever did su */
-			!capable(CAP_DAC_OVERRIDE)) { /* still allow root */
+	                (aesd_u_owner != current_uid().val) &&  // allow user
+	                (aesd_u_owner != current_euid().val) && // allow whoever did su
+			!capable(CAP_DAC_OVERRIDE)) { // still allow root 
 		spin_unlock(&aesd_u_lock);
-		return -EBUSY;   /* -EPERM would confuse the user */
+		return -EBUSY;   // -EPERM would confuse the user
 	}
 
 	if (aesd_u_count == 0)
-		aesd_u_owner = current_uid().val; /* grab it */
+		aesd_u_owner = current_uid().val; // grab it 
+
+
 
 	aesd_u_count++;
 	spin_unlock(&aesd_u_lock);
