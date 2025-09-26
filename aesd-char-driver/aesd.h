@@ -84,6 +84,8 @@ struct aesd_dev {
 	unsigned int access_key;  /* used by aesduid and aesdpriv */
 	struct mutex lock;     /* mutual exclusion semaphore     */
 	struct cdev cdev;	  /* Char device structure		*/
+	char* newlineb;
+	int s_newlineb;
 };
 
 
