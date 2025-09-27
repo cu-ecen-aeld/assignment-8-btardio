@@ -84,6 +84,9 @@ struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(
 void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const struct aesd_buffer_entry *add_entry)
 {
 
+    printk(KERN_WARNING "adding entry: %s\n", add_entry->buffptr);
+    printk(KERN_WARNING "adding entry size: %d\n", add_entry->size);
+
     if (add_entry == NULL){
         return;
     }
@@ -106,6 +109,8 @@ void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const s
     
     buffer->entry[buffer->in_offs].buffptr = add_entry->buffptr;
     buffer->entry[buffer->in_offs].size = add_entry->size;
+
+    printk(KERN_WARNING "buffer->entry[buffer->in_offs].buffptr: %s\n", buffer->entry[buffer->in_offs].buffptr);
 
     buffer->in_offs = (buffer->in_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
     

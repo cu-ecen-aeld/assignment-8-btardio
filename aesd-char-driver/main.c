@@ -352,7 +352,7 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 		buffer.count--;
 		total_size += buffer.entry[buffer.out_offs].size;
 		buffer.out_offs = (buffer.out_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
-		printk(KERN_WARNING "total_size: %d\n", total_size);
+		//printk(KERN_WARNING "total_size: %d\n", total_size);
 	
 
 	}
@@ -540,32 +540,46 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 
 	if (foundNewline) {
 		if (dev->newlineb == NULL) {
+			printk(KERN_WARNING "foundnewline=true dev->newlineb: %s entry: %s", dev->newlineb, entry.buffptr);
 			aesd_circular_buffer_add_entry(&buffer, &entry);
 		} else {
-			printk(KERN_WARNING "count + dev->s_newlineb: %d\n", count+dev->s_newlineb);
-			mychars = krealloc(mychars, count + dev->s_newlineb, GFP_KERNEL);
-			memcpy(mychars + count, dev->newlineb, dev->s_newlineb);
-			entry.buffptr = mychars;
-			entry.size = count + dev->s_newlineb;
-			aesd_circular_buffer_add_entry(&buffer, &entry);
+			printk(KERN_WARNING "foundnewline=true count + dev->newlineb: %s entry: %s\n", dev->newlineb, entry.buffptr);
+			mychars = krealloc(dev->newlineb, count + dev->s_newlineb, GFP_KERNEL);
+			
+			
+			
+			printk(KERN_WARNING "entry.buffptr: %s\n", entry.buffptr);
+			printk(KERN_WARNING "dev->newlineb: %s\n", dev->newlineb);
 
+			memcpy(dev->newlineb + dev->s_newlineb, entry.buffptr, entry.size);
+			dev->newlineb[dev->s_newlineb + entry.size] = '\0';
+
+			printk(KERN_WARNING "entry.buffptr: %s\n", entry.buffptr);
+			printk(KERN_WARNING "dev->newlineb: %s\n", dev->newlineb);
+
+			entry.buffptr = dev->newlineb;
+			entry.size = entry.size + dev->s_newlineb + 1; // newline and null
+			aesd_circular_buffer_add_entry(&buffer, &entry);
+			kfree(mychars);
+			dev->newlineb = NULL;
 		}
 	}
 	else {
 		if(dev->newlineb == NULL) {
-
+			printk(KERN_WARNING "foundnewline=false dev->newlineb: %s entry: %s\n", dev->newlineb, entry);
 			dev->newlineb = kmalloc(count * sizeof(char), GFP_KERNEL);
 			dev->s_newlineb = count; //ksize(dev->newlineb);
 			memcpy(dev->newlineb, mychars, count);
+			dev->newlineb[count] = '\0';
 			kfree(mychars);
 			
 		} else {
-
+			printk(KERN_WARNING "foundlewline=false dev->newlineb: %s entry: %s\n", dev->newlineb);
 			dev->newlineb = krealloc(dev->newlineb, count + dev->s_newlineb, GFP_KERNEL);
 			memcpy(dev->newlineb + dev->s_newlineb, mychars, count);
+			dev->newlineb[count] = '\0';
 			dev->s_newlineb = count + dev->s_newlineb;
 			kfree(mychars);
-			
 		}
 	}
 
