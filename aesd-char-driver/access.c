@@ -32,7 +32,7 @@
 #include <linux/sched.h>
 #include <linux/sched/signal.h>
 
-#include "aesd.h"        /* local definitions */
+#include "src/aesd.h"        /* local definitions */
 
 static dev_t aesd_a_firstdev;  /* Where our range begins */
 

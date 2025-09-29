@@ -32,7 +32,7 @@
 
 #include <linux/uaccess.h>	/* copy_*_user */
 
-#include "aesd.h"		/* local definitions */
+#include "src/aesd.h"		/* local definitions */
 #include "src/aesd-circular-buffer.h"
 #include "access_ok_version.h"
 #include "proc_ops_version.h"
@@ -62,7 +62,7 @@ MODULE_LICENSE("GPL");
 
 struct aesd_dev *aesd_devices;	/* allocated in aesd_init_module */
 
-static struct aesd_circular_buffer buffer;
+//static struct aesd_circular_buffer buffer;
 
 /*
  * Empty out the aesd device; must be called with the device
@@ -303,7 +303,7 @@ struct aesd_qset *aesd_follow(struct aesd_dev *dev, int n)
 ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
                 loff_t *f_pos)
 {
-
+//	struct aesd_circular_buffer buffer;
 	int i;
 //	for ( i = 0; i < AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED; i++){
 //		printk(KERN_WARNING "buffer[%d]: %s\n",i, buffer.entry[i].buffptr);
@@ -311,7 +311,8 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 
 	printk(KERN_INFO "The calling process is \"%s\" (pid %i)\n", current->comm, current->pid);
 
-	struct aesd_dev *dev = filp->private_data; 
+	struct aesd_dev *dev = filp->private_data;
+       	struct aesd_circular_buffer *buffer = &dev->buffer;
 	struct aesd_qset *dptr;	/* the first listitem */
 	int quantum = dev->quantum, qset = dev->qset;
 	int itemsize = quantum * qset; /* how many bytes in the listitem */
@@ -342,23 +343,23 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 
 	
 	int total_size = 0;
-	int old_count = buffer.count;
-	int old_out_offs = buffer.out_offs;
+	int old_count = buffer->count;
+	int old_out_offs = buffer->out_offs;
 	// empty buffer get sizes
 	//while (buffer.count > 0){
 	int b;
 	for(b = 0; b < AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED; b++) {
 
-		buffer.count--;
-		total_size += buffer.entry[buffer.out_offs].size;
-		buffer.out_offs = (buffer.out_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+		buffer->count--;
+		total_size += buffer->entry[buffer->out_offs].size;
+		buffer->out_offs = (buffer->out_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
 		//printk(KERN_WARNING "total_size: %d\n", total_size);
 	
 
 	}
 
-	buffer.count = old_count;
-	buffer.out_offs = old_out_offs;
+	buffer->count = old_count;
+	buffer->out_offs = old_out_offs;
 
 	printk(KERN_WARNING "total_size: %d\n", total_size);
 	printk(KERN_WARNING "count: %d\n", count);
@@ -371,23 +372,23 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	//while (buffer.count > 0) {
 	
 	for(b = 0; b < AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED; b++) {
-		buffer.count--;
+		buffer->count--;
 
 		// write to temp_buffer
-		if (buffer.entry[buffer.out_offs].buffptr != NULL) {
-			memcpy(temp_buffer + b_offset, buffer.entry[buffer.out_offs].buffptr, buffer.entry[buffer.out_offs].size);
+		if (buffer->entry[buffer->out_offs].buffptr != NULL) {
+			memcpy(temp_buffer + b_offset, buffer->entry[buffer->out_offs].buffptr, buffer->entry[buffer->out_offs].size);
 		}
 		
 		
-		b_offset += buffer.entry[buffer.out_offs].size;
+		b_offset += buffer->entry[buffer->out_offs].size;
 		
-		buffer.out_offs = (buffer.out_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
+		buffer->out_offs = (buffer->out_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
 		printk(KERN_WARNING "temp_buffer: %s\n", temp_buffer);
 
 	}
 
 	//buffer.count = old_count;
-	buffer.out_offs = old_out_offs;
+	buffer->out_offs = old_out_offs;
 
 	//dev->quantum = -1;
 	
@@ -430,12 +431,19 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
                 loff_t *f_pos)
 {
+
+	printk(KERN_WARNING "111\n");
+
 	struct aesd_dev *dev = filp->private_data;
 	struct aesd_qset *dptr;
 	int quantum = dev->quantum, qset = dev->qset;
 	int itemsize = quantum * qset;
 	int item, s_pos, q_pos, rest;
 	ssize_t retval = -ENOMEM; /* value used in "goto out" statements */
+	struct aesd_circular_buffer *buffer = &dev->buffer;
+
+	printk(KERN_INFO "The calling process is \"%s\" (pid %i)\n", current->comm, current->pid);
+
 
 	if (mutex_lock_interruptible(&dev->lock))
 		return -ERESTARTSYS;
@@ -489,12 +497,14 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 		count = quantum - q_pos;
 
 
+	//count = 56535;
 
-	struct aesd_buffer_entry entry; // = kmalloc(sizeof(struct aesd_buffer_entry), GFP_KERNEL);
-	
+	struct aesd_buffer_entry *buffer_entry = kmalloc(sizeof(struct aesd_buffer_entry), GFP_KERNEL);
+	memset(buffer_entry, 0, ksize(buffer_entry));
+
 	const char* mychars;
 
-	mychars = kmalloc(count * sizeof(char), GFP_KERNEL);
+	mychars = kmalloc(3+ count * sizeof(char), GFP_KERNEL);
 
 	if (mychars) {
 		// slab	
@@ -502,7 +512,8 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 	}
 
 
-	if (copy_from_user(mychars, buf, count)) {
+	if (copy_from_user(mychars, buf, count + 3)) {
+
 		retval = -EFAULT;
 		goto out;
 	}
@@ -514,11 +525,11 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 
 
 
+	
 
 
-
-	entry.buffptr = mychars;
-	entry.size=count;
+	buffer_entry->buffptr = mychars;
+	buffer_entry->size=count;
 
 	// TODO: dont go until you see a newline, use the filp structure
 
@@ -538,6 +549,18 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 //	aesd_circular_buffer_add_entry(&buffer, &entry);
 
 
+	newline_structure_add(
+			dev,
+			buffer_entry,
+			buffer,
+			mychars,
+			count,
+			foundNewline
+
+			);
+
+
+/*
 	if (foundNewline) {
 		if (dev->newlineb == NULL) {
 			printk(KERN_WARNING "foundnewline=true dev->newlineb: %s entry: %s", dev->newlineb, entry.buffptr);
@@ -566,7 +589,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 	}
 	else {
 		if(dev->newlineb == NULL) {
-			printk(KERN_WARNING "foundnewline=false dev->newlineb: %s entry: %s\n", dev->newlineb, entry);
+			printk(KERN_WARNING "foundnewline=false dev->newlineb: %s entry: %s\n", dev->newlineb, entry.buffptr);
 			dev->newlineb = kmalloc(count * sizeof(char), GFP_KERNEL);
 			dev->s_newlineb = count; //ksize(dev->newlineb);
 			memcpy(dev->newlineb, mychars, count);
@@ -582,7 +605,7 @@ ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,
 			kfree(mychars);
 		}
 	}
-
+*/
 
 
 
@@ -829,6 +852,9 @@ static void aesd_setup_cdev(struct aesd_dev *dev, int index)
 
 int aesd_init_module(void)
 {
+
+	printk(KERN_WARNING "~!@#\n");
+
 	int result, i;
 	dev_t dev = 0;
 
@@ -868,8 +894,9 @@ int aesd_init_module(void)
 		aesd_devices[i].qset = aesd_qset;
 		mutex_init(&aesd_devices[i].lock);
 		aesd_setup_cdev(&aesd_devices[i], i);
+		aesd_devices[i].buffer.in_offs = aesd_devices[i].buffer.out_offs = 0;
 	}
-
+printk(KERN_WARNING "000");
         /* At this point call the init function for any friend device */
 	dev = MKDEV(aesd_major, aesd_minor + aesd_nr_devs);
 	
@@ -878,12 +905,12 @@ int aesd_init_module(void)
 	dev += aesd_access_init(dev);
 
 #ifdef SCULL_DEBUG /* only when debugging */
-	aesd_create_proc();
+//	aesd_create_proc();
 #endif
 
 	//buffer = kmalloc(sizeof(struct aesd_circular_buffer), GFP_KERNEL);	
 	
-	buffer.in_offs = buffer.out_offs = 0;
+//	buffer.in_offs = buffer.out_offs = 0;
 
 	return 0; /* succeed */
 

@@ -11,11 +11,146 @@
 #include <linux/string.h>
 #include <linux/kernel.h>
 #include <linux/slab.h>
+
+#include "src/aesd.h" //-circular-buffer.h"
+
+
 #else
+#include <stdlib.h>
 #include <string.h>
+
+#include "aesd.h" //-circular-buffer.h"
+
+
 #endif
 
-#include "aesd-circular-buffer.h"
+
+
+
+
+
+void newline_structure_add(
+		struct aesd_dev *dev,
+		struct aesd_buffer_entry *entry, 
+		struct aesd_circular_buffer* buffer,
+		char* in_chars,
+		int s_in_chars,
+		int foundNewline) {
+
+
+
+
+	if (foundNewline) {
+		if (dev->newlineb == NULL) {
+#ifdef __KERNEL__
+			printk(KERN_WARNING "foundnewline=true dev->newlineb: %s entry: %s", dev->newlineb, entry->buffptr);
+#endif
+			aesd_circular_buffer_add_entry(buffer, entry);
+		} else {
+#ifdef __KERNEL__
+			printk(KERN_WARNING "foundnewline=true count + dev->newlineb: %s entry: %s\n", dev->newlineb, entry->buffptr);
+#else
+			printf("03 foundnewline=true count + dev->newlineb: %s entry: %s\n", dev->newlineb, entry->buffptr);
+#endif
+
+#ifdef __KERNEL__
+			if ( dev->newlineb == NULL ) {
+				dev->newlineb = kmalloc(sizeof(char) * (s_in_chars + dev->s_newlineb), GFP_KERNEL);
+			} else {
+				dev->newlineb = krealloc(dev->newlineb, sizeof(char) * (s_in_chars + dev->s_newlineb), GFP_KERNEL);
+			}
+#else
+			if ( dev->newlineb == NULL ) {
+				dev->newlineb = malloc(sizeof(char) * (s_in_chars + dev->s_newlineb));
+			} else {
+				dev->newlineb = realloc(dev->newlineb, sizeof(char) * (s_in_chars + dev->s_newlineb));
+			}
+#endif
+
+#ifdef __KERNEL__			
+			printk(KERN_WARNING "entry.buffptr: %.*s\n", entry->size, entry->buffptr);
+			printk(KERN_WARNING "dev->newlineb: %s\n", dev->newlineb);
+#else
+			printf("entry.buffptr: %.*s\n", entry->size, entry->buffptr);
+			printf("dev->newlineb: %.*s\n", dev->s_newlineb, dev->newlineb);
+#endif
+			memcpy(dev->newlineb + dev->s_newlineb, entry->buffptr, entry->size);
+			dev->newlineb[dev->s_newlineb + entry->size] = '\0';
+			dev->s_newlineb = entry->size = entry->size + dev->s_newlineb;
+			entry->buffptr = dev->newlineb;
+#ifdef __KERNEL__
+			printk(KERN_WARNING "entry.buffptr: %s\n", entry->buffptr);
+			printk(KERN_WARNING "dev->newlineb: %.*s\n", dev->s_newlineb, dev->newlineb);
+#else
+			printf("entry.buffptr: %s\n", entry->buffptr);
+			printf("dev->newlineb: %.*s\n", dev->s_newlineb, dev->newlineb);
+
+#endif
+			//entry->size = entry->size + dev->s_newlineb + 1; // newline and null
+			aesd_circular_buffer_add_entry(buffer, entry);
+#ifdef __KERNEL__
+			kfree(in_chars);
+#else
+			free(in_chars);
+#endif
+			dev->newlineb = NULL;
+		}
+	}
+	else {
+		if(dev->newlineb == NULL) {
+#ifdef __KERNEL__
+			printk(KERN_WARNING "00 foundnewline=false dev->newlineb: %s entry: %s\n", dev->newlineb, entry->buffptr);
+#else
+			printf("00 foundnewline=false dev->newlineb: %s entry: %s\n", dev->newlineb, entry->buffptr);
+#endif
+
+#ifdef __KERNEL__
+			dev->newlineb = kmalloc((s_in_chars + 1) * sizeof(char), GFP_KERNEL);
+#else
+			dev->newlineb = malloc((s_in_chars + 1) * sizeof(char));
+#endif
+			dev->s_newlineb = s_in_chars; //ksize(dev->newlineb);
+			memcpy(dev->newlineb, in_chars, s_in_chars);
+			dev->newlineb[s_in_chars] = '\0';
+#ifdef __KERNEL__
+			kfree(in_chars);
+#else
+			free(in_chars);
+#endif
+		} else {
+#ifdef __KERNEL__
+			printk(KERN_WARNING "01 foundlewline=false dev->newlineb: %s entry: %s\n", dev->newlineb);
+#else
+			printf("01 foundlewline=false dev->newlineb: %s entry: %s\n", dev->newlineb);
+#endif
+
+
+#ifdef __KERNEL__
+			dev->newlineb = krealloc(dev->newlineb, s_in_chars + dev->s_newlineb, GFP_KERNEL);
+#else
+			dev->newlineb = realloc(dev->newlineb, s_in_chars + dev->s_newlineb);
+#endif
+
+			memcpy(dev->newlineb + dev->s_newlineb, in_chars, s_in_chars);
+			dev->newlineb[s_in_chars + dev->s_newlineb] = '\0';
+			
+			dev->s_newlineb = s_in_chars + dev->s_newlineb;
+#ifdef __KERNEL__
+			kfree(in_chars);
+#else
+			free(in_chars);
+#endif
+		}
+	}
+
+
+ 
+
+
+}
+
+
+
 
 /**
  * @param buffer the buffer to search for corresponding offset.  Any necessary locking must be performed by caller.
@@ -84,8 +219,10 @@ struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(
 void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const struct aesd_buffer_entry *add_entry)
 {
 
+#ifdef __KERNEL__
     printk(KERN_WARNING "adding entry: %s\n", add_entry->buffptr);
     printk(KERN_WARNING "adding entry size: %d\n", add_entry->size);
+#endif
 
     if (add_entry == NULL){
         return;
@@ -99,7 +236,6 @@ void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const s
 #ifdef __KERNEL__   
     kfree(buffer->entry[buffer->in_offs].buffptr);
 #else
-
     // test is using stack, but keeping above b/c user can't manage slab
     if (buffer->entry[buffer->in_offs].buffptr != NULL) { 
     	//free(buffer->entry[buffer->in_offs].buffptr);
@@ -109,8 +245,9 @@ void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const s
     
     buffer->entry[buffer->in_offs].buffptr = add_entry->buffptr;
     buffer->entry[buffer->in_offs].size = add_entry->size;
-
+#ifdef __KERNEL__
     printk(KERN_WARNING "buffer->entry[buffer->in_offs].buffptr: %s\n", buffer->entry[buffer->in_offs].buffptr);
+#endif
 
     buffer->in_offs = (buffer->in_offs + 1) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
     
@@ -134,5 +271,12 @@ void aesd_circular_buffer_init(struct aesd_circular_buffer *buffer)
 {
     
     memset(buffer,0,sizeof(struct aesd_circular_buffer));
+
+
+    int i;
+
+    for ( i = 0; i < AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED; i++) {
+	    buffer->entry[i].buffptr = NULL;
+    }
 
 }

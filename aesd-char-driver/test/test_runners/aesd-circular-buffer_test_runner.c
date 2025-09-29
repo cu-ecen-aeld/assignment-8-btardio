@@ -3,6 +3,9 @@
 /*=======Automagically Detected Files To Include=====*/
 #include "unity.h"
 #include "aesd-circular-buffer.h"
+#include "aesd.h"
+#include "string.h"
+#include <stdlib.h>
 
 /*=======External Functions This Runner Calls=====*/
 extern void setUp(void);
@@ -13,6 +16,7 @@ extern void test_add_entry(void);
 extern void test_aesd_circular_buffer_find_entry_offset_for_fpos(void);
 extern void test_circular_buffer(void);
 extern void test_circular_buffer_assignment7(void);
+extern void test_find_bug(void);
 
 
 /*=======Mock Management=====*/
@@ -74,12 +78,13 @@ static void run_test(UnityTestFunction func, const char* name, int line_num)
 int main(void)
 {
   UnityBegin("test/aesd-circular-buffer_test.c");
-  run_test(test_sane, "test_sane", 10);
-  run_test(test_init, "test_init", 60);
-  run_test(test_add_entry, "test_add_entry", 80);
-  run_test(test_aesd_circular_buffer_find_entry_offset_for_fpos, "test_aesd_circular_buffer_find_entry_offset_for_fpos", 114);
-  run_test(test_circular_buffer, "test_circular_buffer", 197);
-  run_test(test_circular_buffer_assignment7, "test_circular_buffer_assignment7", 243);
+  run_test(test_sane, "test_sane", 14);
+  run_test(test_init, "test_init", 64);
+  run_test(test_add_entry, "test_add_entry", 84);
+  run_test(test_aesd_circular_buffer_find_entry_offset_for_fpos, "test_aesd_circular_buffer_find_entry_offset_for_fpos", 118);
+  run_test(test_circular_buffer, "test_circular_buffer", 201);
+  run_test(test_circular_buffer_assignment7, "test_circular_buffer_assignment7", 247);
+  run_test(test_find_bug, "test_find_bug", 296);
 
   return UnityEnd();
 }

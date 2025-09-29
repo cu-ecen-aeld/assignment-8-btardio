@@ -30,10 +30,12 @@ struct aesd_buffer_entry
     /**
      * Number of bytes stored in buffptr
      */
-    size_t size;
+    int size; //size_t size;
     // this size_t is a pain loading things to a graphics card, compiler optimizes
     // contiguous space for buffptr addressing
 };
+
+typedef struct aesd_buffer_entry _aesd_buffer_entry;
 
 struct aesd_circular_buffer
 {
@@ -45,11 +47,11 @@ struct aesd_circular_buffer
      * The current location in the entry structure where the next write should
      * be stored.
      */
-    uint8_t in_offs;
+    int in_offs; //uint8_t in_offs;
     /**
      * The first location in the entry structure to read from
      */
-    uint8_t out_offs;
+    int out_offs; //uint8_t out_offs;
     /**
      * set to true when the buffer entry structure is full
      */
@@ -59,12 +61,14 @@ struct aesd_circular_buffer
 
 };
 
-extern struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(struct aesd_circular_buffer *buffer,
+typedef struct aesd_circular_buffer _aesd_circular_buffer;
+
+struct aesd_buffer_entry *aesd_circular_buffer_find_entry_offset_for_fpos(struct aesd_circular_buffer *buffer,
             size_t char_offset, size_t *entry_offset_byte_rtn );
 
-extern void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const struct aesd_buffer_entry *add_entry);
+void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const struct aesd_buffer_entry *add_entry);
 
-extern void aesd_circular_buffer_init(struct aesd_circular_buffer *buffer);
+void aesd_circular_buffer_init(struct aesd_circular_buffer *buffer);
 
 /**
  * Create a for loop to iterate over each member of the circular buffer.

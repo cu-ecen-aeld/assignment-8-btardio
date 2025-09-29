@@ -1,5 +1,9 @@
+#include <stdlib.h>
+
 #include "unity.h"
 #include "aesd-circular-buffer.h"
+#include "aesd.h"
+#include "string.h"
 
 void setUp(void) {
 }
@@ -14,7 +18,7 @@ void test_sane(void) {
 static void write_circular_buffer_packet(struct aesd_circular_buffer *buffer,
                                          const char *writestr)
 {
-    struct aesd_buffer_entry entry;
+    _aesd_buffer_entry entry;
     entry.buffptr = writestr;
     entry.size=strlen(writestr);
     aesd_circular_buffer_add_entry(buffer,&entry);
@@ -28,7 +32,7 @@ static void verify_find_entry(struct aesd_circular_buffer *buffer, size_t entry_
 {
     size_t offset_rtn=0;
     char message[250];
-    struct aesd_buffer_entry *rtnentry = aesd_circular_buffer_find_entry_offset_for_fpos(buffer,
+    _aesd_buffer_entry *rtnentry = aesd_circular_buffer_find_entry_offset_for_fpos(buffer,
                                                 entry_offset_byte,
                                                 &offset_rtn);
     snprintf(message,sizeof(message),"null pointer unexpected when verifying offset %zu with expect string %s",
@@ -49,7 +53,7 @@ static void verify_find_entry_not_found(struct aesd_circular_buffer *buffer, siz
 {
     size_t offset_rtn;
     char message[150];
-    struct aesd_buffer_entry *rtnentry = aesd_circular_buffer_find_entry_offset_for_fpos(buffer,
+    _aesd_buffer_entry *rtnentry = aesd_circular_buffer_find_entry_offset_for_fpos(buffer,
                                                 entry_offset_byte,
                                                 &offset_rtn);
     snprintf(message,sizeof(message),"Expected null pointer when trying to validate entry offset %zu",entry_offset_byte);
@@ -78,9 +82,9 @@ void test_init(void) {
 
 
 void test_add_entry(void) {
-    struct aesd_buffer_entry A;
-    struct aesd_buffer_entry B;
-    struct aesd_buffer_entry C;
+    _aesd_buffer_entry A;
+    _aesd_buffer_entry B;
+    _aesd_buffer_entry C;
 
     const char c_A = 'A';
     const char c_B = 'B';
@@ -113,9 +117,9 @@ void test_add_entry(void) {
 
 void test_aesd_circular_buffer_find_entry_offset_for_fpos(void) {
 
-    struct aesd_buffer_entry A;
-    struct aesd_buffer_entry B;
-    struct aesd_buffer_entry C;
+    _aesd_buffer_entry A;
+    _aesd_buffer_entry B;
+    _aesd_buffer_entry C;
 
     const char c_A = 'A';
     const char c_B = 'B';
@@ -141,9 +145,9 @@ void test_aesd_circular_buffer_find_entry_offset_for_fpos(void) {
     aesd_circular_buffer_add_entry(&buffer, &C);
 
 */
-    struct aesd_buffer_entry *rval;
+    _aesd_buffer_entry *rval;
 
-    rval = malloc(sizeof(struct aesd_buffer_entry));
+    rval = malloc(sizeof(_aesd_buffer_entry));
 
     aesd_circular_buffer_find_entry_offset_for_fpos(&buffer, 0, &rval);
 /*
@@ -154,9 +158,9 @@ void test_aesd_circular_buffer_find_entry_offset_for_fpos(void) {
 /*
 void test_aesd_circular_buffer_find_entry_offset_string(void) {
 
-    struct aesd_buffer_entry A;
-    struct aesd_buffer_entry B;
-    struct aesd_buffer_entry C;
+    _aesd_buffer_entry A;
+    _aesd_buffer_entry B;
+    _aesd_buffer_entry C;
 
     const char *c_A = "abcdefghijklm";
 
@@ -172,7 +176,7 @@ void test_aesd_circular_buffer_find_entry_offset_string(void) {
 
     aesd_circular_buffer_add_entry(&buffer, &A);
     
-    struct aesd_buffer_entry *rval;
+    _aesd_buffer_entry *rval;
 
     size_t char_offset;
 
@@ -287,3 +291,76 @@ void test_circular_buffer_assignment7(void)
     verify_find_entry_not_found(&buffer,72);
 }
 
+
+
+void test_find_bug(void) {
+
+	_aesd_dev *ddv = malloc(sizeof(_aesd_dev));
+
+	_aesd_buffer_entry *entry = malloc(sizeof(_aesd_buffer_entry));
+	
+	_aesd_circular_buffer *buffer = malloc(sizeof(_aesd_circular_buffer));
+
+	memset(ddv, 0, sizeof(_aesd_dev));
+
+	ddv->newlineb = NULL;
+
+	aesd_circular_buffer_init(buffer);
+	
+	char* chars = malloc(sizeof(char) * 4);
+	memcpy(chars, "abcd", 4);
+
+	
+	entry->buffptr = chars;
+	entry->size = 4;
+
+	// probably kprint? test \0 is on everything
+	// or
+	// test everything is allocating enough space
+
+/*
+	write_circular_buffer_packet(buffer,"write1\n"); 
+	write_circular_buffer_packet(buffer,"write2\n"); 
+	write_circular_buffer_packet(buffer,"write3\n"); 
+	write_circular_buffer_packet(buffer,"write4\n"); 
+	write_circular_buffer_packet(buffer,"write5\n"); 
+	write_circular_buffer_packet(buffer,"write6\n"); 
+	write_circular_buffer_packet(buffer,"write7\n"); 
+	write_circular_buffer_packet(buffer,"write8\n"); 
+	write_circular_buffer_packet(buffer,"write9\n"); 
+	write_circular_buffer_packet(buffer,"write10\n"); 
+*/
+
+
+	newline_structure_add(ddv, entry, buffer, chars, 4, 0);
+
+
+	TEST_ASSERT_EQUAL_STRING("abcd\0", ddv->newlineb);
+
+	int i;
+
+	chars = malloc(sizeof(char) * 4);
+	memcpy(chars, "efgh", 4);
+	entry->buffptr = chars;
+	entry->size = 4;
+
+	newline_structure_add(ddv, entry, buffer, chars, 4, 0);
+
+	TEST_ASSERT_EQUAL_STRING("abcdefgh\0", ddv->newlineb);
+
+	chars = malloc(sizeof(char) * 4);
+	memcpy(chars, "ijk\n", 4);
+	entry->buffptr = chars;
+	entry->size = 4;
+
+	newline_structure_add(ddv, entry, buffer, chars, 4, 1);
+
+	//TEST_ASSERT_EQUAL_STRING("abcdefghijk\n", ddv->);
+	
+	
+	for ( i = 0; i < AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED; i++){
+		printf("buffer[%d]: %s\n",i, buffer->entry[i].buffptr);
+	}
+
+
+}	
