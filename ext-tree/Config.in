@@ -1,3 +1,4 @@
 source "$BR2_EXTERNAL_AESD_ASSIGNMENTS_PATH/package/aesd-assignments-socket/Config.in"
 source "$BR2_EXTERNAL_AESD_ASSIGNMENTS_PATH/package/aesd-assignments-modules/Config.in"
+source "$BR2_EXTERNAL_AESD_ASSIGNMENTS_PATH/package/aesd-assignments-devices/Config.in"
 # source "$BR2_EXTERNAL_AESD_ASSIGNMENTS_PATH/package/myopenssl/Config.in"

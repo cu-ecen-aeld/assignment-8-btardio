@@ -6,7 +6,7 @@
 
 #TODO: Fill up the contents below in order to reference your assignment 3 git contents
 
-AESD_ASSIGNMENTS_SOCKET_VERSION = 'e3c364f46989936a2e9d4b71129adac72f8bc9f9'
+AESD_ASSIGNMENTS_SOCKET_VERSION = '893eff7a6eb678959ac25813e10ae629bba717d5'
 
 # Note: Be sure to reference the *ssh* repository URL here (not https) to work properly
 # with ssh keys and the automated build/test system.
@@ -23,7 +23,7 @@ export CROSS_COMPILE
 
 define AESD_ASSIGNMENTS_SOCKET_BUILD_CMDS
 	$(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D)/finder-app all 
-	$(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D)/server all
+	$(MAKE) CFLAGS="$(TARGET_CFLAGS)" LDFLAGS="$(TARGET_LDFLAGS)" CC="$(TARGET_CC)" LD="$(TARGET_LD)" $(TARGET_CONFIGURE_OPTS) -C $(@D)/server
 endef
 
 define AESD_ASSIGNMENTS_SOCKET_INSTALL_TARGET_CMDS
@@ -37,7 +37,6 @@ define AESD_ASSIGNMENTS_SOCKET_INSTALL_TARGET_CMDS
 	$(INSTALL) -m 0755 $(@D)/finder-app/finder.sh $(TARGET_DIR)/bin
 	$(INSTALL) -m 0755 $(@D)/server/aesdsocket $(TARGET_DIR)/bin
 	$(INSTALL) -m 0755 $(@D)/server/aesdsocket-start-stop $(TARGET_DIR)/etc/init.d/S99aesdsocket
-
 endef
 
 $(eval $(generic-package))
