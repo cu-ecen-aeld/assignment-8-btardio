@@ -415,6 +415,9 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 	retval = total_size;
 
   out:
+	mutex_unlock(&dev->lock);
+	return buffer->s_cb;
+/*
 	//mutex_unlock(&dev->lock);
 	if (dev->quantum == -1){
 		dev->quantum = 1;
@@ -426,6 +429,7 @@ ssize_t aesd_read(struct file *filp, char __user *buf, size_t count,
 		mutex_unlock(&dev->lock);
 		return retval;
 	}
+*/
 }
 
 ssize_t aesd_write(struct file *filp, const char __user *buf, size_t count,

@@ -7,6 +7,7 @@
 #define SOCKET_PORT 9000
 
 #define FILENAME "/var/tmp/aesdsocketdata"
+#define FILENAME_AESD_DEVICE "/dev/aesdchar"
 #define INTERVAL_SECONDS 10
 #define BUFFER_T 3000
 
@@ -130,12 +131,17 @@ read_from_client (const int filedes, char* buffer, int nbytes)
 
 
 #ifdef APPENDWRITE
+
+#ifdef USE_AESD_CHAR_DEVICE
+	file_pointer = fopen(FILENAME_AESD_DEVICE, "a");
+#else
         file_pointer = fopen(FILENAME, "a");
+#endif
 
         // seek to position in file corresponding with fd
 
         if ( file_pointer == NULL ){
-            log_and_print("Error writing to file.\n");
+            log_and_print("Error opening file.\n");
             return -1;
         }
 #endif
@@ -189,6 +195,7 @@ read_from_client (const int filedes, char* buffer, int nbytes)
         bufferposition[filedes] = bufferposition[filedes] + (nbytes * sizeof(char));
 
 #ifdef APPENDWRITE
+	// write to file that is compared
         if (fputs(buffer, file_pointer) == EOF) {
             perror("Error writing to file");
             fclose(file_pointer);
@@ -201,10 +208,9 @@ read_from_client (const int filedes, char* buffer, int nbytes)
         }
 
 #ifdef USE_AESD_CHAR_DEVICE
-	FILE* file = fopen("/dev/aesdchar", "r");
-	printf("!!!\n");
+	FILE* file = fopen(FILENAME_AESD_DEVICE, "r");
 #else
-        FILE* file = fopen("/var/tmp/aesdsocketdata", "r");
+        FILE* file = fopen(FILENAME, "r");
 #endif
         if (file == NULL) {
             perror("Error opening file");
@@ -225,8 +231,9 @@ read_from_client (const int filedes, char* buffer, int nbytes)
         fbuffer[file_size] = '\0';
 
         fclose(file);
-
+	printf("filedes: %d\n", filedes);
         sbytes = write(filedes, fbuffer, file_size);
+	printf("...\n");
 #else
 
         sbytes = write(filedes, "ACK", 3);

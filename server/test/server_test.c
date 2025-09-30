@@ -38,15 +38,18 @@ void test_using_aesdchar_device(void) {
 
 	char* chars = malloc(5 * sizeof(char));
 
-	memcpy(chars, "abcd\0", 5);	
+	memcpy(chars, "xyz\n", 5);	
 	printf("000\n");
 	FILE *fptr;
 	fptr = fopen("tmp.txt", "w");
 
 	fprintf(fptr, ">>>\n");
 
+	//printf("ptr: %d\n", fptr);
+
 	bufferposition[0] = -1;
-	
+
+	// writing to /dev/null filedes 0
 	read_from_client(0, chars, 5);
 
 	fclose(fptr);
