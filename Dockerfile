@@ -115,6 +115,7 @@ RUN apt-get install -y glib-2.0
 
 RUN apt-get install -y libslirp-dev
 
+RUN apt-get install -y qemu-system-aarch64
 
 
 ENTRYPOINT ["/entrypoint.sh"]
