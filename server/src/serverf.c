@@ -1,4 +1,5 @@
 #include "serverf.h"
+// # include tst
 
 #define SHM_SIZE 331072
 #define BUFFER_SIZE 300000
@@ -10,6 +11,9 @@
 #define BUFFER_T 3000
 
 #define APPENDWRITE
+
+#define USE_AESD_CHAR_DEVICE
+
 
 /********
  * * *
@@ -141,7 +145,6 @@ read_from_client (const int filedes, char* buffer, int nbytes)
             exit(1);
         }
 
-
         // locking mechanism needed here
         if (bufferposition[filedes] == -1){
 
@@ -197,8 +200,12 @@ read_from_client (const int filedes, char* buffer, int nbytes)
             return -11;
         }
 
+#ifdef USE_AESD_CHAR_DEVICE
+	FILE* file = fopen("/dev/aesdchar", "r");
+	printf("!!!\n");
+#else
         FILE* file = fopen("/var/tmp/aesdsocketdata", "r");
-
+#endif
         if (file == NULL) {
             perror("Error opening file");
             return 1;
@@ -335,12 +342,7 @@ void append_time(void) {
 }
 
 
-int pmain(void) {
-
-    if (sem_init(&mutex, 0, 1) != 0) {
-        perror("sem_init failed");
-        exit(EXIT_FAILURE);
-    }
+void initialize() {
 
     // Create shared memory segments
     // IPC_PRIVATE ensures a unique key, IPC_CREAT creates if it doesn't exist
@@ -372,9 +374,22 @@ int pmain(void) {
         exit(1);
     }
 
+    if (sem_init(&mutex, 0, 1) != 0) {
+        perror("sem_init failed");
+        exit(EXIT_FAILURE);
+    }
+
     *lastBufferPosition = -BUFFER_T;
 
     memset(bufferposition, -1, FD_SETSIZE);
+
+
+
+}
+
+int pmain(void) {
+
+    initialize();
 
     if (shmdt(bufferposition) == -1) {
         perror("shmdt child");

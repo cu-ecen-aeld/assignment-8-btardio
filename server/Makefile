@@ -15,6 +15,7 @@ CFLAGS += -Wno-unknown-pragmas
 CFLAGS += -Wundef
 CFLAGS += -Wold-style-definition
 
+LDFLAGS += -pthread
 
 default: all
 
@@ -42,10 +43,10 @@ clean:
 all: clean $(TARGET_SERVER)
 
 $(TARGET_SERVER):
-	$(CC) $(CFLAGS) $(INC_DIRS) $(SRC_FILES) -o $(TARGET_SERVER)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(INC_DIRS) $(SRC_FILES) -o $(TARGET_SERVER)
 
 test: server_test_runner
-	$(CC) $(CFLAGS) $(INC_DIRS) $(SYMBOLS) -g $(TEST_SRC_FILES) -o $(TARGET_TEST)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(INC_DIRS) $(SYMBOLS) -g $(TEST_SRC_FILES) -o $(TARGET_TEST)
 
 server_test_runner: test/server_test.c
 	ruby $(UNITY_ROOT)/auto/generate_test_runner.rb test/server_test.c test/test_runners/server_test_runner.c

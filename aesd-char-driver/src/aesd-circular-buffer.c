@@ -46,6 +46,9 @@ void newline_structure_add(
 			printk(KERN_WARNING "foundnewline=true dev->newlineb: %s entry: %s", dev->newlineb, entry->buffptr);
 #endif
 			aesd_circular_buffer_add_entry(buffer, entry);
+			
+			// buffer->s_cb += entry->size; moved to add funct
+
 		} else {
 #ifdef __KERNEL__
 			printk(KERN_WARNING "foundnewline=true count + dev->newlineb: %s entry: %s\n", dev->newlineb, entry->buffptr);
@@ -88,6 +91,9 @@ void newline_structure_add(
 #endif
 			//entry->size = entry->size + dev->s_newlineb + 1; // newline and null
 			aesd_circular_buffer_add_entry(buffer, entry);
+
+			// buffer->s_cb += entry->size; // moved to add method
+
 #ifdef __KERNEL__
 			kfree(in_chars);
 #else
@@ -141,10 +147,10 @@ void newline_structure_add(
 			free(in_chars);
 #endif
 		}
+
 	}
 
 
- 
 
 
 }
@@ -233,7 +239,10 @@ void aesd_circular_buffer_add_entry(struct aesd_circular_buffer *buffer, const s
 	buffer->out_offs = (buffer->in_offs + 1 ) % AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED;
     }
  
-#ifdef __KERNEL__   
+#ifdef __KERNEL__
+    buffer->s_cb -= buffer->entry[buffer->in_offs].size;
+    buffer->s_cb += add_entry->size; 
+    printk(KERN_WARNING "buffer size: %d\n", buffer->s_cb);
     kfree(buffer->entry[buffer->in_offs].buffptr);
 #else
     // test is using stack, but keeping above b/c user can't manage slab
@@ -272,11 +281,14 @@ void aesd_circular_buffer_init(struct aesd_circular_buffer *buffer)
     
     memset(buffer,0,sizeof(struct aesd_circular_buffer));
 
+    buffer->s_cb = 0;
+
 
     int i;
 
     for ( i = 0; i < AESDCHAR_MAX_WRITE_OPERATIONS_SUPPORTED; i++) {
 	    buffer->entry[i].buffptr = NULL;
+	    buffer->entry[i].size = 0;
     }
 
 }

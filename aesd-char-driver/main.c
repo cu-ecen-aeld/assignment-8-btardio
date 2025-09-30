@@ -652,83 +652,100 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	else if (_IOC_DIR(cmd) & _IOC_WRITE)
 		err =  !access_ok_wrapper(VERIFY_READ, (void __user *)arg, _IOC_SIZE(cmd));
 	if (err) return -EFAULT;
+	
+	printk(KERN_WARNING "cmd ioctl: %d\n", cmd); 
 
 	switch(cmd) {
 
-	  case SCULL_IOCRESET:
-		aesd_quantum = SCULL_QUANTUM;
-		aesd_qset = SCULL_QSET;
+		case SCULL_IOCRESET:
+			aesd_quantum = SCULL_QUANTUM;
+			aesd_qset = SCULL_QSET;
 		break;
         
-	  case SCULL_IOCSQUANTUM: /* Set: arg points to the value */
-		if (! capable (CAP_SYS_ADMIN))
-			return -EPERM;
-		retval = __get_user(aesd_quantum, (int __user *)arg);
+		case SCULL_IOCSQUANTUM: /* Set: arg points to the value */
+			if (! capable (CAP_SYS_ADMIN)) {
+				return -EPERM;
+			}
+			retval = __get_user(aesd_quantum, (int __user *)arg);
 		break;
 
-	  case SCULL_IOCTQUANTUM: /* Tell: arg is the value */
-		if (! capable (CAP_SYS_ADMIN))
-			return -EPERM;
-		aesd_quantum = arg;
+		case SCULL_IOCTQUANTUM: /* Tell: arg is the value */
+
+			if (! capable (CAP_SYS_ADMIN)) {
+				return -EPERM;
+			}
+			aesd_quantum = arg;
 		break;
 
-	  case SCULL_IOCGQUANTUM: /* Get: arg is pointer to result */
-		retval = __put_user(aesd_quantum, (int __user *)arg);
+		case SCULL_IOCGQUANTUM: /* Get: arg is pointer to result */
+
+			retval = __put_user(aesd_quantum, (int __user *)arg);
 		break;
 
-	  case SCULL_IOCQQUANTUM: /* Query: return it (it's positive) */
-		return aesd_quantum;
+		case SCULL_IOCQQUANTUM: /* Query: return it (it's positive) */
+	
+			return aesd_quantum;
 
-	  case SCULL_IOCXQUANTUM: /* eXchange: use arg as pointer */
-		if (! capable (CAP_SYS_ADMIN))
-			return -EPERM;
-		tmp = aesd_quantum;
-		retval = __get_user(aesd_quantum, (int __user *)arg);
-		if (retval == 0)
-			retval = __put_user(tmp, (int __user *)arg);
+		case SCULL_IOCXQUANTUM: /* eXchange: use arg as pointer */
+
+			if (! capable (CAP_SYS_ADMIN)) {
+				return -EPERM;
+			}
+			tmp = aesd_quantum;
+			retval = __get_user(aesd_quantum, (int __user *)arg);
+			if (retval == 0) {
+				retval = __put_user(tmp, (int __user *)arg);
+			}
 		break;
 
-	  case SCULL_IOCHQUANTUM: /* sHift: like Tell + Query */
-		if (! capable (CAP_SYS_ADMIN))
-			return -EPERM;
-		tmp = aesd_quantum;
-		aesd_quantum = arg;
-		return tmp;
+		case SCULL_IOCHQUANTUM: /* sHift: like Tell + Query */
+
+			if (! capable (CAP_SYS_ADMIN))
+				return -EPERM;
+			tmp = aesd_quantum;
+			aesd_quantum = arg;
+			return tmp;
         
-	  case SCULL_IOCSQSET:
-		if (! capable (CAP_SYS_ADMIN))
-			return -EPERM;
-		retval = __get_user(aesd_qset, (int __user *)arg);
+		case SCULL_IOCSQSET:
+
+			if (! capable (CAP_SYS_ADMIN))
+				return -EPERM;
+			retval = __get_user(aesd_qset, (int __user *)arg);
 		break;
 
-	  case SCULL_IOCTQSET:
-		if (! capable (CAP_SYS_ADMIN))
-			return -EPERM;
-		aesd_qset = arg;
+		case SCULL_IOCTQSET:
+
+			if (! capable (CAP_SYS_ADMIN))
+				return -EPERM;
+			aesd_qset = arg;
 		break;
 
-	  case SCULL_IOCGQSET:
-		retval = __put_user(aesd_qset, (int __user *)arg);
+		case SCULL_IOCGQSET:
+	
+			retval = __put_user(aesd_qset, (int __user *)arg);
 		break;
 
-	  case SCULL_IOCQQSET:
-		return aesd_qset;
+		case SCULL_IOCQQSET:
+	
+			return aesd_qset;
 
-	  case SCULL_IOCXQSET:
-		if (! capable (CAP_SYS_ADMIN))
-			return -EPERM;
-		tmp = aesd_qset;
-		retval = __get_user(aesd_qset, (int __user *)arg);
-		if (retval == 0)
-			retval = put_user(tmp, (int __user *)arg);
+		case SCULL_IOCXQSET:
+	
+			if (! capable (CAP_SYS_ADMIN))
+				return -EPERM;
+			tmp = aesd_qset;
+			retval = __get_user(aesd_qset, (int __user *)arg);
+			if (retval == 0)
+				retval = put_user(tmp, (int __user *)arg);
 		break;
 
-	  case SCULL_IOCHQSET:
-		if (! capable (CAP_SYS_ADMIN))
-			return -EPERM;
-		tmp = aesd_qset;
-		aesd_qset = arg;
-		return tmp;
+		case SCULL_IOCHQSET:
+	
+			if (! capable (CAP_SYS_ADMIN))
+				return -EPERM;
+			tmp = aesd_qset;
+			aesd_qset = arg;
+			return tmp;
 
         /*
          * The following two change the buffer size for aesdpipe.
@@ -737,10 +754,12 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
          */
 
 	  case SCULL_P_IOCTSIZE:
+
 		aesd_p_buffer = arg;
 		break;
 
 	  case SCULL_P_IOCQSIZE:
+
 		return aesd_p_buffer;
 
 
@@ -759,6 +778,7 @@ long aesd_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 
 loff_t aesd_llseek(struct file *filp, loff_t off, int whence)
 {
+
 	struct aesd_dev *dev = filp->private_data;
 	loff_t newpos;
 
@@ -772,7 +792,12 @@ loff_t aesd_llseek(struct file *filp, loff_t off, int whence)
 		break;
 
 	  case 2: /* SEEK_END */
-		newpos = dev->size + off;
+		// count all non null in circular buffer and add size
+
+		newpos = dev->buffer.s_cb;
+		
+		//newpos = dev->size + off;
+		
 		break;
 
 	  default: /* can't happen */

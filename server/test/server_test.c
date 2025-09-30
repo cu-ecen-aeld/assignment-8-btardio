@@ -1,6 +1,9 @@
 #include "unity.h"
 #include "server.h" // Header for the functions being tested
 
+
+extern int* bufferposition;
+
 void setUp(void) {
 }
 
@@ -20,13 +23,35 @@ void test_safe_malloc(void) {
 
 void test_(void) {
 
-    read_from_client(NULL, NULL, 1);
+    //read_from_client(NULL, NULL, 1);
     TEST_ASSERT_EQUAL(-2, -2);
 }
 
 #ifndef APPENDWRITE
 #define APPENDWRITE
 #endif
+
+
+void test_using_aesdchar_device(void) {
+
+	initialize();
+
+	char* chars = malloc(5 * sizeof(char));
+
+	memcpy(chars, "abcd\0", 5);	
+	printf("000\n");
+	FILE *fptr;
+	fptr = fopen("tmp.txt", "w");
+
+	fprintf(fptr, ">>>\n");
+
+	bufferposition[0] = -1;
+	
+	read_from_client(0, chars, 5);
+
+	fclose(fptr);
+}
+
 /*
 int main(void) {
     UNITY_BEGIN();

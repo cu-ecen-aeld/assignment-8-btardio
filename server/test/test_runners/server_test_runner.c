@@ -9,6 +9,7 @@ extern void setUp(void);
 extern void tearDown(void);
 extern void test_safe_malloc(void);
 extern void test_(void);
+extern void test_using_aesdchar_device(void);
 
 
 /*=======Mock Management=====*/
@@ -70,8 +71,9 @@ static void run_test(UnityTestFunction func, const char* name, int line_num)
 int main(void)
 {
   UnityBegin("test/server_test.c");
-  run_test(test_safe_malloc, "test_safe_malloc", 10);
-  run_test(test_, "test_", 21);
+  run_test(test_safe_malloc, "test_safe_malloc", 13);
+  run_test(test_, "test_", 24);
+  run_test(test_using_aesdchar_device, "test_using_aesdchar_device", 35);
 
   return UnityEnd();
 }

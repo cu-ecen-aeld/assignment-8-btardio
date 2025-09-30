@@ -59,6 +59,11 @@ struct aesd_circular_buffer
 
     int count;
 
+    // circular buffer size
+    int s_cb;
+
+    // circular buffer position
+    int c_cb;
 };
 
 typedef struct aesd_circular_buffer _aesd_circular_buffer;
