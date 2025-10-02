@@ -1,5 +1,8 @@
 FROM cuaesd/aesd-autotest:24-unit-test
 
-COPY id_ed25519.readonly ~/.ssh/id_ed25519
+COPY id_ed25519.readonly /root/.ssh/id_ed25519
+COPY github_known_hosts /github_known_hosts
 RUN apt-get update
 RUN apt-get install -y ssh
+
+RUN cat /github_known_hosts >> /root/.ssh/known_hosts
