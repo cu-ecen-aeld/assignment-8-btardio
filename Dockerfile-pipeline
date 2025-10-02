@@ -1,0 +1,5 @@
+FROM cuaesd/aesd-autotest:24-unit-test
+
+COPY id_ed25519.readonly ~/.ssh/id_ed25519
+RUN apt-get update
+RUN apt-get install -y ssh
