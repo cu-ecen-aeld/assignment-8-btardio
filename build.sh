@@ -3,9 +3,6 @@
 #Author: Siddhant Jajoo
 #Modified: Brandon Tardio
 
-# allow root build
-export FORCE_UNSAFE_CONFIGURE=1
-
 ln -s ext-tree base_external
 
 LINE_TO_APPEND="sha256  01be32c9f2a1a48fffe81c1992ce6cea6bba7ebe5cb574533fd6d608d864e050  linux-5.15.19.tar.xz"
