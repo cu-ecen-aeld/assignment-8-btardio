@@ -4,9 +4,6 @@
 [submodule "assignment-autotest"]
 	path = assignment-autotest
 	url = https://github.com/cu-ecen-aeld/assignment-autotest.git
-[submodule "qemu"]
-	path = qemu
-	url = https://github.com/qemu/qemu.git
 [submodule "aesd_char"]
 	path = aesd_char
 	url = git@github.com:btardio/aesd_char.git
