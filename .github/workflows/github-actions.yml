@@ -17,11 +17,7 @@ jobs:
             run: ./unit-test.sh
     full-test:
         container: 
-          image: docker.io/btardio/classimg:latest
-          credentials:
-            username: ${{ secrets.DOCKER_USERNAME }}
-            password: ${{ secrets.DOCKER_PASSWORD }}
-
+          image: btardio/runnerimg:24-assignment7-buildroot
         runs-on: self-hosted
         steps:
           - uses: actions/checkout@v2
