@@ -11,6 +11,8 @@ HASHFILE="buildroot/linux/linux.hash"
 
 grep -qF -- "$LINE_TO_APPEND" "$HASHFILE" || echo "$LINE_TO_APPEND" >> "$HASHFILE"
 
+# this patch is erroring
+mv buildroot/board/qemu/patches/linux/0002-powerpc-boot-Fix-build-with-gcc-15.patch ./
 
 source shared.sh
 
